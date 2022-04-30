@@ -92,6 +92,9 @@ def setup(app: Flask):
         user["colour"] = f"{top_colour:x}"
         member["colour"] = f"{top_colour:x}"
 
+        guild = list(filter(lambda g: g["id"] == str(runtime_config.discord_guild_id), guilds))[0]
+        member["is_staff"] = int(guild["permissions"]) & 0x2000 == 0x2000
+
         print(user)
         print(member)
         print(user_coll_entry)

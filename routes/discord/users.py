@@ -43,18 +43,21 @@ def setup(app: Flask):
 
         # TODO: implement a check for if the user does not have a db entry
         user_coll_entry = runtime_config.mongodb_user_collection.find_one({"_id": user_id})
+        print(user_coll_entry)
 
-        # Roles
-
-        guild_roles = get_guild_roles()
-        guild_role_ids = [r["id"] for r in guild_roles]
-        common_role_ids = list(set(guild_role_ids).intersection(member["roles"]))
-        common_roles = [role for role in guild_roles if role["id"] in common_role_ids]
-        common_roles_dict = {role["id"]: role for role in common_roles}
-        member["roles"] = common_roles_dict
-
-        top_colour = get_member_colour(common_roles)["color"]
-        member["colour"] = f"{top_colour:x}"
+        if len(member["roles"]) > 0:
+            # Roles
+            guild_roles = get_guild_roles()
+            guild_role_ids = [r["id"] for r in guild_roles]
+            common_role_ids = list(set(guild_role_ids).intersection(member["roles"]))
+            common_roles = [role for role in guild_roles if role["id"] in common_role_ids]
+            common_roles_dict = {role["id"]: role for role in common_roles}
+            member["roles"] = common_roles_dict
+            top_colour = get_member_colour(common_roles)["color"]
+            member["colour"] = f"{top_colour:x}"
+        else:
+            member["roles"] = "none"
+            member["colour"] = "#FFFFFF"
 
         print(member)
         print(user_coll_entry)
