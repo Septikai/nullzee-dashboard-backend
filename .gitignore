@@ -1,0 +1,8 @@
+# Directories
+venv
+.idea
+__pycache__
+
+# Files
+config.json
+secrets.py
