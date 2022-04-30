@@ -34,6 +34,7 @@ def get_member_colour(common_roles):
 
 
 def setup(app: Flask):
+
     @app.route("/users/<user_id>")
     @cors.site()
     def discord_user(user_id: str):
@@ -67,5 +68,18 @@ def setup(app: Flask):
             "db_info": user_coll_entry,
         })
 
+    @app.route("/users/<user_id>/punishments")
+    @cors.site()
+    def user_punishments(user_id: str):
+        if not user_id.isdigit():
+            return res.json(code=404)
 
+        # TODO: implement a check for if the user does not have a db entry
+        user_coll_entry = list(runtime_config.mongodb_moderation_collection.find({"offender_id": int(user_id)}))
+        user_coll_entry = [{key: value for key, value in d.items() if key != "_id"} for d in user_coll_entry]
+        print(f"punishments - {user_coll_entry}")
+
+        return res.json({
+            "punishments": user_coll_entry
+        })
 

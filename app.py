@@ -10,6 +10,8 @@ from helpers import mongo_setup
 
 config_reader.read_config(CONFIG_NAME)
 
+# TODO: add auth before release so you can't just make any call you can imagine to the api and have it return everything
+
 
 def setup():
     api_app = Flask(__name__)

@@ -60,6 +60,7 @@ def get_member_colour(common_roles):
 
 
 def setup(app: Flask):
+
     @app.route("/oauth_callback")
     @cors.site()
     def discord_oauth_endpoint():
