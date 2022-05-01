@@ -5,6 +5,7 @@ from helpers import res, cors
 import runtime_config
 from utils.constants import DISCORD_API_URL, OAuth
 from utils.json_wrapper import JsonWrapper
+from utils.discord_api import bot_auth_request, fetch_guild_member
 
 
 def exchange_code(code, redirect_uri):
@@ -23,9 +24,9 @@ def exchange_code(code, redirect_uri):
     return r.json()
 
 
-def auth_request(endpoint, access_token, auth_type) -> JsonWrapper or list:
+def bearer_auth_request(endpoint, access_token) -> JsonWrapper or list:
     headers = {
-        "Authorization": f"{auth_type} {access_token}"
+        "Authorization": f"Bearer {access_token}"
     }
     r = requests.get(f"{DISCORD_API_URL}/{endpoint}", headers=headers).json()
     if isinstance(r, dict):
@@ -35,21 +36,16 @@ def auth_request(endpoint, access_token, auth_type) -> JsonWrapper or list:
 
 
 def get_user(access_token):
-    return auth_request("users/@me", access_token, "Bearer")
+    return bearer_auth_request("users/@me", access_token)
 
 
 def get_user_guilds(access_token):
-    return auth_request("users/@me/guilds", access_token, "Bearer")
-
-
-def get_guild_member(member_id):
-    return auth_request(f"guilds/{runtime_config.discord_guild_id}/members/{member_id}",
-                        runtime_config.bot_token, "Bot")
+    return bearer_auth_request("users/@me/guilds", access_token)
 
 
 def get_guild_roles():
-    return auth_request(f"guilds/{runtime_config.discord_guild_id}/roles",
-                        runtime_config.bot_token, "Bot")
+    return bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles",
+                            runtime_config.bot_token)
 
 
 def get_member_colour(common_roles):
@@ -73,7 +69,7 @@ def setup(app: Flask):
         if discord_access_token is None:
             return res.json(code=403)
         user, guilds = get_user(discord_access_token), get_user_guilds(discord_access_token)
-        member = get_guild_member(user["id"])
+        member = fetch_guild_member(user["id"], force=True)["member"]
 
         # TODO: implement a check for if the user does not have a db entry
         user_coll_entry = runtime_config.mongodb_user_collection.find_one({"_id": str(user["id"])})

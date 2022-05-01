@@ -1,4 +1,6 @@
-CONFIG_NAME = "config.json"
+FETCHED_MEMBERS_FILE = "fetched_members.json"
+
+CONFIG_NAMES = ["config.json", FETCHED_MEMBERS_FILE]
 
 DISCORD_API_URL = "https://discord.com/api/v9"
 

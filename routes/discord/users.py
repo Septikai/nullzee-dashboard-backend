@@ -4,30 +4,11 @@ import requests, time
 
 from helpers import res, cors
 import runtime_config
-from utils.constants import DISCORD_API_URL
-from utils.json_wrapper import JsonWrapper
-
-
-# TODO: replace the dict below with a json file
-mods_fetched = {}
-
-def auth_request(endpoint, access_token) -> JsonWrapper or list:
-    headers = {
-        "Authorization": f"Bot {access_token}"
-    }
-    r = requests.get(f"{DISCORD_API_URL}/{endpoint}", headers=headers).json()
-    if isinstance(r, dict):
-        return JsonWrapper.from_dict(r)
-    else:
-        return r
-
-
-def get_guild_member(member_id):
-    return auth_request(f"guilds/{runtime_config.discord_guild_id}/members/{member_id}", runtime_config.bot_token)
+from utils.discord_api import bot_auth_request, fetch_guild_member, fetch_multiple_guild_members
 
 
 def get_guild_roles():
-    return auth_request(f"guilds/{runtime_config.discord_guild_id}/roles", runtime_config.bot_token)
+    return bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles", runtime_config.bot_token)
 
 
 def get_member_colour(common_roles):
@@ -44,7 +25,8 @@ def setup(app: Flask):
     def discord_user(user_id: str):
         if not user_id.isdigit():
             return res.json(code=404)
-        member = get_guild_member(user_id)
+        print(runtime_config.fetched_members)
+        member = fetch_guild_member(user_id)["member"]
 
         # TODO: implement a check for if the user does not have a db entry
         user_coll_entry = runtime_config.mongodb_user_collection.find_one({"_id": user_id})
@@ -84,21 +66,18 @@ def setup(app: Flask):
         for d in user_coll_entry:
             d.update((k, str(v)) for k, v in d.items() if k == "mod_id")
 
+        to_fetch = [p["mod_id"] for p in user_coll_entry]
+        mods = fetch_multiple_guild_members(to_fetch)
+
         for punishment in user_coll_entry:
-            if punishment["mod_id"] in mods_fetched and time.time() - punishment["mod_id"]["fetched_at"] < 86400:
-                punishment["mod_pfp"] = mods_fetched[punishment["mod_id"]]["avatar"]
-                punishment["mod_username"] = mods_fetched[punishment["mod_id"]]["username"]
+            if "user" in mods[punishment["mod_id"]]:
+                punishment["mod_pfp"] = mods[punishment["mod_id"]]["user"]["avatar"]
+                punishment["mod_username"] = f"{mods[punishment['mod_id']]['user']['username']}#" \
+                                             f"{mods[punishment['mod_id']]['user']['discriminator']}"
             else:
-                mod = get_guild_member(punishment["mod_id"])
-                try:
-                    punishment["mod_pfp"] = mod["user"]["avatar"]
-                    punishment["mod_username"] = f"{mod['user']['username']}#{mod['user']['discriminator']}"
-                    mods_fetched[punishment["mod_id"]] = {}
-                    mods_fetched[punishment["mod_id"]]["avatar"] = mod["user"]["avatar"]
-                    mods_fetched[punishment["mod_id"]]["username"] = f"{mod['user']['username']}#{mod['user']['discriminator']}"
-                    mods_fetched[punishment["mod_id"]]["fetched_at"] = time.time()
-                except KeyError:
-                    print(mod)
+                punishment["mod_pfp"] = mods[punishment["mod_id"]]["avatar"]
+                punishment["mod_username"] = f"{mods[punishment['mod_id']]['username']}#" \
+                                             f"{mods[punishment['mod_id']]['discriminator']}"
 
         print(f"punishments - {user_coll_entry}")
 

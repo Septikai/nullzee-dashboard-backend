@@ -5,4 +5,5 @@ __pycache__
 
 # Files
 config.json
+fetched_members.json
 secrets.py
