@@ -5,54 +5,8 @@ from helpers import res, cors
 import runtime_config
 from utils.constants import DISCORD_API_URL, OAuth
 from utils.json_wrapper import JsonWrapper
-from utils.discord_api import bot_auth_request, fetch_guild_member_or_user
-
-
-def exchange_code(code, redirect_uri):
-    data = {
-        "client_id": str(runtime_config.discord_oauth["client_id"]),
-        "client_secret": runtime_config.discord_oauth["client_secret"],
-        "grant_type": "authorization_code",
-        "code": code,
-        "redirect_uri": redirect_uri,
-        "scope": OAuth.SCOPE
-    }
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-    r = requests.post(f"{DISCORD_API_URL}/oauth2/token", data=data, headers=headers)
-    return r.json()
-
-
-def bearer_auth_request(endpoint, access_token) -> JsonWrapper or list:
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    r = requests.get(f"{DISCORD_API_URL}/{endpoint}", headers=headers).json()
-    if isinstance(r, dict):
-        return JsonWrapper.from_dict(r)
-    else:
-        return r
-
-
-def get_user(access_token):
-    return bearer_auth_request("users/@me", access_token)
-
-
-def get_user_guilds(access_token):
-    return bearer_auth_request("users/@me/guilds", access_token)
-
-
-def get_guild_roles():
-    return bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles",
-                            runtime_config.bot_token)
-
-
-def get_member_colour(common_roles):
-    common_roles.reverse()
-    filtered = list(filter(lambda d: d["color"] is not None and d["color"] != 0,
-                           sorted(common_roles, key=lambda d: d["position"], reverse=True)))
-    return filtered[0]
+from utils.discord_api import bot_auth_request, fetch_guild_member_or_user, get_member_colour_role, get_guild_roles,\
+    exchange_code, get_current_user, get_current_user_guilds
 
 
 def setup(app: Flask):
@@ -68,7 +22,7 @@ def setup(app: Flask):
         discord_access_token = exchange_code(code, redirect_uri).get("access_token", None)
         if discord_access_token is None:
             return res.json(code=403)
-        user, guilds = get_user(discord_access_token), get_user_guilds(discord_access_token)
+        user, guilds = get_current_user(discord_access_token), get_current_user_guilds(discord_access_token)
         member = fetch_guild_member_or_user(user["id"], force=True)["member"]
 
         # TODO: implement a check for if the user does not have a db entry
@@ -85,7 +39,7 @@ def setup(app: Flask):
 
         # Colour
 
-        top_colour = get_member_colour(common_roles)["color"]
+        top_colour = get_member_colour_role(common_roles)["color"]
         user["colour"] = f"{top_colour:x}"
         member["colour"] = f"{top_colour:x}"
 

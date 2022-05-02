@@ -37,6 +37,7 @@ cors_host: str = "*"
 bot_token: str = ""
 
 # Fetched Members and Users
-# From fetched_members.json
+# From fetched_data.json
 fetched_members: dict = None
 fetched_users: dict = None
+fetched_leaderboard_data: dict = None

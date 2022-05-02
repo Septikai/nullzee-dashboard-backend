@@ -12,10 +12,11 @@ def read_config(paths: str) -> None:
                 setattr(runtime_config, key, config[key])
 
 
-def save_fetched_members():
+def save_fetched_data():
     with open(FETCHED_MEMBERS_FILE, "w") as f:
         fetched_json = {
             "fetched_members": runtime_config.fetched_members,
-            "fetched_users": runtime_config.fetched_users
+            "fetched_users": runtime_config.fetched_users,
+            "fetched_leaderboard_data": runtime_config.fetched_leaderboard_data
         }
         json.dump(fetched_json, f)

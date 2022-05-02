@@ -1,4 +1,4 @@
-FETCHED_MEMBERS_FILE = "fetched_members.json"
+FETCHED_MEMBERS_FILE = "fetched_data.json"
 
 CONFIG_NAMES = ["config.json", FETCHED_MEMBERS_FILE]
 

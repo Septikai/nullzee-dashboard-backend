@@ -3,8 +3,43 @@ import time
 
 import runtime_config
 from utils.json_wrapper import JsonWrapper
-from utils.constants import DISCORD_API_URL
-from config_manager import save_fetched_members
+from utils.constants import DISCORD_API_URL, OAuth
+from config_manager import save_fetched_data
+
+
+def exchange_code(code, redirect_uri):
+    data = {
+        "client_id": str(runtime_config.discord_oauth["client_id"]),
+        "client_secret": runtime_config.discord_oauth["client_secret"],
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "scope": OAuth.SCOPE
+    }
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    r = requests.post(f"{DISCORD_API_URL}/oauth2/token", data=data, headers=headers)
+    return r.json()
+
+
+def bearer_auth_request(endpoint, access_token) -> JsonWrapper or list:
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    r = requests.get(f"{DISCORD_API_URL}/{endpoint}", headers=headers).json()
+    if isinstance(r, dict):
+        return JsonWrapper.from_dict(r)
+    else:
+        return r
+
+
+def get_current_user(access_token):
+    return bearer_auth_request("users/@me", access_token)
+
+
+def get_current_user_guilds(access_token):
+    return bearer_auth_request("users/@me/guilds", access_token)
 
 
 def bot_auth_request(endpoint, access_token) -> JsonWrapper or list:
@@ -16,6 +51,17 @@ def bot_auth_request(endpoint, access_token) -> JsonWrapper or list:
         return JsonWrapper.from_dict(r)
     else:
         return r
+
+
+def get_guild_roles():
+    return bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles", runtime_config.bot_token)
+
+
+def get_member_colour_role(common_roles):
+    common_roles.reverse()
+    filtered = list(filter(lambda d: d["color"] is not None and d["color"] != 0,
+                           sorted(common_roles, key=lambda d: d["position"], reverse=True)))
+    return filtered[0]
 
 
 def get_guild_member_from_api(member_id):
@@ -46,6 +92,7 @@ def fetch_guild_member_or_user(member_id, save=True, force=False):
             fetched["user"] = get_user_from_api(member_id)
             fetched["user"]["fetched_at"] = time.time()
             fetched["user"]["is_member"] = False
+            del fetched["member"]
             if "code" in fetched["user"]:
                 print(f"FAIL - {fetched['member']}")
                 print(f"CONT. - {fetched['user']}")
@@ -66,7 +113,7 @@ def fetch_guild_member_or_user(member_id, save=True, force=False):
         time.sleep(fetched["user"]["retry_after"] + 0.1)
         fetched = fetch_guild_member_or_user(member_id, save, force)
     if save:
-        save_fetched_members()
+        save_fetched_data()
     return fetched
 
 
@@ -88,6 +135,6 @@ def fetch_multiple_guild_members_or_users(member_ids, limit=None):
                 time.sleep(0.02)
             else:
                 time.sleep(0.04)
-    save_fetched_members()
+    save_fetched_data()
     print(f"fetched {len(members)}{f'/{limit}' if limit is not None else ''} - {members}")
     return members
