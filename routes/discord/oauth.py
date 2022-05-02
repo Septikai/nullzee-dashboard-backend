@@ -5,7 +5,7 @@ from helpers import res, cors
 import runtime_config
 from utils.constants import DISCORD_API_URL, OAuth
 from utils.json_wrapper import JsonWrapper
-from utils.discord_api import bot_auth_request, fetch_guild_member
+from utils.discord_api import bot_auth_request, fetch_guild_member_or_user
 
 
 def exchange_code(code, redirect_uri):
@@ -69,7 +69,7 @@ def setup(app: Flask):
         if discord_access_token is None:
             return res.json(code=403)
         user, guilds = get_user(discord_access_token), get_user_guilds(discord_access_token)
-        member = fetch_guild_member(user["id"], force=True)["member"]
+        member = fetch_guild_member_or_user(user["id"], force=True)["member"]
 
         # TODO: implement a check for if the user does not have a db entry
         user_coll_entry = runtime_config.mongodb_user_collection.find_one({"_id": str(user["id"])})
