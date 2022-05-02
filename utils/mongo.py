@@ -17,6 +17,10 @@ def add_user_objects(db_users):
                 print(f"PROBLEM - {members[member]}")
     db_users = [z | {"user": members[z["_id"]]["user"] if members[z["_id"]]["is_member"] else members[z["_id"]]}
                 for z in db_users if z["_id"] in ids]
+    db_users = [z | {"nick": members[z["_id"]]["nick"] if members[z["_id"]]["is_member"] else None}
+                for z in db_users if z["_id"] in ids]
+    db_users = [z | {"colour": members[z["_id"]]["colour"] if members[z["_id"]]["is_member"] else None}
+                for z in db_users if z["_id"] in ids]
 
     return db_users
 

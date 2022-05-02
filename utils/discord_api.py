@@ -54,7 +54,15 @@ def bot_auth_request(endpoint, access_token) -> JsonWrapper or list:
 
 
 def get_guild_roles():
-    return bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles", runtime_config.bot_token)
+    if runtime_config.fetched_guild_roles != {} and \
+       time.time() - runtime_config.fetched_guild_roles["fetched_at"] < 172800:
+        return runtime_config.fetched_guild_roles["data"]
+
+    guild_roles = bot_auth_request(f"guilds/{runtime_config.discord_guild_id}/roles", runtime_config.bot_token)
+
+    runtime_config.fetched_guild_roles = {"data": guild_roles, "fetched_at": time.time()}
+
+    return guild_roles
 
 
 def get_member_colour_role(common_roles):
@@ -112,6 +120,18 @@ def fetch_guild_member_or_user(member_id, save=True, force=False):
         print(f"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA - {fetched}")
         time.sleep(fetched["user"]["retry_after"] + 0.1)
         fetched = fetch_guild_member_or_user(member_id, save, force)
+    if "member" in fetched and len(fetched["member"]["roles"]) > 0:
+        guild_roles = get_guild_roles()
+        guild_role_ids = [r["id"] for r in guild_roles]
+        common_role_ids = list(set(guild_role_ids).intersection(fetched["member"]["roles"]))
+        common_roles = [role for role in guild_roles if role["id"] in common_role_ids]
+        common_roles_dict = {role["id"]: role for role in common_roles}
+        fetched["member"]["roles"] = common_roles_dict
+        top_colour = get_member_colour_role(common_roles)["color"]
+        fetched["member"]["colour"] = f"{top_colour:x}"
+    else:
+        fetched["user"]["roles"] = None
+        fetched["user"]["colour"] = "#FFFFFF"
     if save:
         save_fetched_data()
     return fetched
@@ -128,7 +148,7 @@ def fetch_multiple_guild_members_or_users(member_ids, limit=None):
             else:
                 members[member_id] = fetched["user"]
         count += 1
-        if count is not None and count >= limit:
+        if limit is not None and count >= limit:
             break
         else:
             if "member" in fetched:

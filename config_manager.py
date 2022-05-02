@@ -17,6 +17,7 @@ def save_fetched_data():
         fetched_json = {
             "fetched_members": runtime_config.fetched_members,
             "fetched_users": runtime_config.fetched_users,
-            "fetched_leaderboard_data": runtime_config.fetched_leaderboard_data
+            "fetched_leaderboard_data": runtime_config.fetched_leaderboard_data,
+            "fetched_guild_roles": runtime_config.fetched_guild_roles
         }
         json.dump(fetched_json, f)

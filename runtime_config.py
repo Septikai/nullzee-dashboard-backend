@@ -41,3 +41,4 @@ bot_token: str = ""
 fetched_members: dict = None
 fetched_users: dict = None
 fetched_leaderboard_data: dict = None
+fetched_guild_roles: dict = None
