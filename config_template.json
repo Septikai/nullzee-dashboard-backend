@@ -1,0 +1,15 @@
+{
+  "mongodb_connection_string": "",
+  "mongodb_database_name": "",
+  "mongodb_user_collection_name": "",
+  "mongodb_moderation_collection_name": "",
+  "mongodb_giveaway_collection_name": "",
+  "discord_oauth": {
+    "client_id": 0,
+    "client_secret": "",
+    "redirect_uri": ""
+  },
+  "discord_guild_id": 0,
+  "cors_host": "",
+  "bot_token": ""
+}
